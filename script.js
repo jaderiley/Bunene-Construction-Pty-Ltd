@@ -337,7 +337,9 @@
     'content.contactTitle',
     'content.contactLead',
     'content.featuredQuote',
-    'content.eyebrow'
+    'content.eyebrow',
+    'content.ctaBannerTitle',
+    'content.ctaBannerSub'
   ]);
 
   $$('[data-config]').forEach((el) => {
@@ -606,6 +608,75 @@
   // ─── FOOTER YEAR ──────────────────────────────────────────
 
   $('#footerYear').textContent = new Date().getFullYear();
+
+  // ─── PREMIUM INTERACTIONS (see claude-dev/UPGRADE_RECIPE.md) ──
+  // All optional/guarded: sites without the CTA banner markup or without
+  // IntersectionObserver just skip these — nothing breaks.
+
+  // Closing CTA band bindings (same phone/wa as the hero)
+  const bannerCall = $('#bannerCallBtn');
+  if (bannerCall) bannerCall.setAttribute('href', telLink(phone));
+  const bannerPhoneText = $('#bannerPhoneText');
+  if (bannerPhoneText) bannerPhoneText.textContent = prettyPhone(phone);
+  const bannerWa = $('#bannerWaBtn');
+  if (bannerWa) bannerWa.setAttribute('href', waLink(wa, waDefaultMsg));
+
+  // Monogram favicon (same initials as the logo mark) — brands the browser
+  // tab and kills the /favicon.ico 404 without shipping an image file.
+  (function () {
+    const mark = $('.nav__logo-mark');
+    const initials = mark ? mark.textContent.trim() : '';
+    if (!initials) return;
+    const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#2b4a78';
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">` +
+      `<rect width="64" height="64" rx="14" fill="${accent}"/>` +
+      `<text x="32" y="42" text-anchor="middle" font-family="Georgia,serif" font-weight="700" font-size="30" fill="#fff">${initials}</text></svg>`;
+    const link = document.createElement('link');
+    link.rel = 'icon';
+    link.type = 'image/svg+xml';
+    link.href = 'data:image/svg+xml,' + encodeURIComponent(svg);
+    document.head.appendChild(link);
+  })();
+
+  // Scroll reveals: content eases in as you reach it. Classes are added
+  // here (not in markup) so JS-off visitors never see hidden content.
+  if ('IntersectionObserver' in window) {
+    const revealTargets = $$(
+      '.section__head, .service, .gallery-card, .review, .why-item, ' +
+      '.areas__copy, .areas__map, .faq-item, .contact__copy, .form, .cta-banner__inner'
+    );
+    revealTargets.forEach((el) => {
+      el.classList.add('reveal');
+      // Stagger siblings inside the same parent for a cascade effect.
+      const siblingIndex = Array.prototype.indexOf.call(el.parentElement.children, el.closest('li') || el);
+      el.style.setProperty('--reveal-delay', `${Math.min(siblingIndex, 5) * 0.08}s`);
+    });
+
+    const bpArts = $$('.gallery-card__art svg');
+    bpArts.forEach((svg) => svg.classList.add('bp-anim'));
+
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-inview');
+          io.unobserve(entry.target);
+        }
+      });
+    }, { rootMargin: '0px 0px 12% 0px', threshold: 0 });
+
+    revealTargets.forEach((el) => io.observe(el));
+    bpArts.forEach((svg) => io.observe(svg));
+
+    // Hard fallback: a demo page must never keep content hidden. If any
+    // element still hasn't intersected after 6s (odd embedder, quirky
+    // in-app browser), reveal it anyway.
+    setTimeout(() => {
+      $$('.reveal:not(.is-inview), .bp-anim:not(.is-inview)').forEach((el) => {
+        el.classList.add('is-inview');
+        io.unobserve(el);
+      });
+    }, 6000);
+  }
 
   // ─── JSON-LD SCHEMAS ──────────────────────────────────────
 
