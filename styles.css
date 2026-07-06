@@ -1436,3 +1436,8 @@ a.contact__direct-row:hover .contact__direct-value { color: var(--accent); }
     stroke-dashoffset: 0;
   }
 }
+
+/* ── ForgeLab footer credit (template-wide since 2026-07-06) ── */
+.footer__credit { font-size: .78rem; opacity: .55; }
+.footer__credit a { color: inherit; text-decoration: underline; }
+.footer__credit a:hover { opacity: 1; }
