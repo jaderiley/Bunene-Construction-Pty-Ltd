@@ -539,10 +539,16 @@
       `).join('');
   }
 
-  // ─── REVIEWS ───────────────────────────────────────────────
-
+  // ─── REVIEWS (or honest guarantees fallback for no-review leads) ──
+  // A lead with 0–1 real Google reviews used to still show 3 fabricated
+  // testimonials with invented customer names — which read as fake to the
+  // very business owner we're pitching, and were identical across every
+  // site of that trade. When there are no real reviews, show honest service
+  // guarantees instead (nothing invented). Driven off config so a client
+  // with real reviews is untouched. See ForgeLab template backlog.
   const reviewsGrid = $('#reviewsGrid');
-  if (reviewsGrid && CONFIG.content.reviews) {
+  const hasRealReviews = Array.isArray(CONFIG.content.reviews) && CONFIG.content.reviews.length > 0;
+  if (reviewsGrid && hasRealReviews) {
     const starSvg = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`;
     reviewsGrid.innerHTML = CONFIG.content.reviews
       .map((r) => `
@@ -553,6 +559,27 @@
             <span class="review__name">${r.name}</span>
             <span class="review__source">${r.source || 'Google'}</span>
           </div>
+        </li>
+      `).join('');
+  } else if (reviewsGrid) {
+    const guarantees = (Array.isArray(CONFIG.content.guarantees) && CONFIG.content.guarantees.length)
+      ? CONFIG.content.guarantees
+      : ['Free, no-obligation quotes', 'Punctual, reliable and tidy',
+         'Workmanship guaranteed', 'Upfront pricing — no surprises'];
+    const checkSvg = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2l-3.5-3.5a1 1 0 0 0-1.4 1.4l4.2 4.2a1 1 0 0 0 1.4 0l9-9a1 1 0 0 0-1.4-1.4z"/></svg>`;
+    const sec = reviewsGrid.closest('.reviews');
+    const eyebrow = sec && sec.querySelector('.eyebrow');
+    const title = sec && sec.querySelector('.section__title');
+    const lead = sec && sec.querySelector('.section__lead');
+    if (eyebrow) eyebrow.textContent = 'Our promise';
+    if (title) { title.removeAttribute('data-config'); title.textContent = CONFIG.content.guaranteesTitle || 'What every job comes with.'; }
+    if (lead) lead.textContent = CONFIG.content.guaranteesLead
+      || "We're newly listed and building our Google reviews — but here's what you can count on from day one.";
+    reviewsGrid.innerHTML = guarantees
+      .map((g) => `
+        <li class="review review--guarantee">
+          <div class="review__stars">${checkSvg}</div>
+          <p class="review__body">${g}</p>
         </li>
       `).join('');
   }
